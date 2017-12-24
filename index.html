@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+    <style>
+        #answers-container {
+            display: flex;
+            font-family: "Bookman Old Style"
+        }
+        
+        #images-container {
+            display: flex
+        }
+
+        #stuff-dude {
+            flex: 3
+        }
+
+        img {
+            width: 48%;
+            height: auto;
+        }
+        
+        .highlight {
+            background-color:#FF0
+        }
+
+        .answer {
+            flex: 1;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        #top {
+            background-color:chartreuse
+        }
+
+        #middle {
+            background-color:coral
+        }
+
+        #last {
+            background-color:firebrick
+        }
+    </style>
+
+    <head>
+        <meta charset="UTF-8">
+        <title>title</title>
+    </head>
+
+    <body>
+        <div id='answers-container'>
+            <code style='background: #f1f1f1' id='stuff-dude'>
+                <pre id='stuff-container'>
+                </pre>
+            </code>
+            <div id='top' class='answer'></div>
+            <div id='middle' class='answer'></div>
+            <div id='last' class='answer'></div>
+        </div>
+        <div id='images-container'>
+            <img src="./output.jpg" id='image-one' />
+            <div id='text-results'></div>
+            <div id='slurp'>
+                <img src="./slurp.gif">
+            </div>
+            <!-- <img src="./output.jpg" id='image-three' /> -->
+            <!-- <img src="./output.jpg" id='image-four' /> -->
+        </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
+        <script>
+            var socket = io();
+            console.log(socket)
+            outerData = undefined
+            var slurp = document.getElementById('slurp')
+            var textResults = document.getElementById('text-results')
+            imageOne = document.getElementById('image-one')
+
+            socket.on('parsed question', (data) => {
+                document.getElementById('stuff-container').innerText = JSON.stringify(data,null, 2)
+            })
+            socket.on('results', (data) => { 
+                slurp.style.display = 'none'
+                imageOne.style.height = 'auto'
+                textResults.style.display = ''
+                if (data.htmlText !== "") textResults.innerHTML = data.htmlText
+                document.getElementById('answers-container').style.display = ''
+                
+                outerData = data.htmlText
+                var exact = data.exact
+                var sortable = [];
+               
+                for (var answer in exact) {
+                    sortable.push([answer, exact[answer]])
+                }
+
+                sortable.sort(function (a, b) {
+                    return b[1] - a[1];
+                });
+
+                if (sortable.length == 3) {
+                    console.log(data)
+                    document.getElementById('top').innerText = stringBuilder(sortable,0)
+                    document.getElementById('middle').innerText = stringBuilder(sortable, 1)
+                    document.getElementById('last').innerText = stringBuilder(sortable, 2)
+                }
+                fullText = data.htmlText
+            })
+            socket.on("image", (data) => {
+                imageOne.style.width = "48%"
+                imageOne.style.height = 'auto'     
+                if (data.image) {
+                    base64Image = 'data:image/png;base64,' + data.buffer
+                    document.getElementById(data.div).src = base64Image
+                }
+            });  
+            socket.on('begin search', (data) => {
+                document.getElementById('stuff-container').innerText = ""
+                clearText()
+                imageOne.src = './soph_dawg.jpeg'
+                imageOne.style.width = "300px"
+                slurp.style.display = ''
+                // document.getElementById('answers-container').style.display = 'none'
+                for (i = 0; document.images.length > i; i++) {
+                    document.getElementById('text-results').style.display = 'none'
+                }
+            } )  
+
+            function stringBuilder(sortable, index) {
+                var sum = 0
+                sortable.forEach((arr) => sum += arr[1]) 
+                var percent = ((sortable[index][1] / sum) * 100).toFixed(2) 
+                var countOfMatches = sortable[index][1]
+                return `${sortable[index][0]}\nCount of matches: ${countOfMatches}\npercent: ${percent}`
+            }
+
+            function clearText() {
+                document.getElementById('top').innerText = ""
+                document.getElementById('middle').innerText = ""
+                document.getElementById('last').innerText = ""
+            }
+        </script>
+    </body>
+</html>
+
+
